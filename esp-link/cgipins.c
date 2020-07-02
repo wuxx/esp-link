@@ -41,6 +41,21 @@ int ICACHE_FLASH_ATTR cgiPinsGet(HttpdConnData *connData) {
   return HTTPD_CGI_DONE;
 }
 
+int ICACHE_FLASH_ATTR cgiGPIOGet(HttpdConnData *connData) {
+  if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted
+
+  char buff[1024];
+  int len;
+
+  len = os_sprintf(buff,
+      "{ \"gpio12\":%d, \"gpio13\":%d}", 
+      GPIO_INPUT_GET(GPIO_ID_PIN(12)),  GPIO_INPUT_GET(GPIO_ID_PIN(13)));
+
+  jsonHeader(connData, 200);
+  httpdSend(connData, buff, len);
+  return HTTPD_CGI_DONE;
+}
+
 // Cgi to change choice of pin assignments
 int ICACHE_FLASH_ATTR cgiPinsSet(HttpdConnData *connData) {
   if (connData->conn==NULL) {
@@ -118,12 +133,62 @@ collision: {
   }
 }
 
+int ICACHE_FLASH_ATTR cgiGPIOSet(HttpdConnData *connData) {
+  if (connData->conn==NULL) {
+    return HTTPD_CGI_DONE; // Connection aborted
+  }
+
+  int8_t ok = 0;
+  int8_t b12 = -1, b13 = -1;
+  ok |= getInt8Arg(connData, "gpio12", &b12);
+  ok |= getInt8Arg(connData, "gpio13", &b13);
+  if (ok < 0) return HTTPD_CGI_DONE;
+
+  if (ok > 0) {
+      os_printf("gpio set: gpio12=%d gpio13=%d \n", b12, b13);
+      if (b12 != -1) {
+          if (b12) {
+              gpio_output_set((1<<12), 0, (1<<12), 0);
+          } else {
+              gpio_output_set(0, (1<<12), (1<<12), 0);
+          }
+
+      }
+
+      if (b13 != -1) {
+          if (b13) {
+              gpio_output_set((1<<13), 0, (1<<13), 0);
+          } else {
+              gpio_output_set(0, (1<<13), (1<<13), 0);
+          }
+
+      }
+
+      httpdStartResponse(connData, 204);
+      httpdEndHeaders(connData);
+  }
+  return HTTPD_CGI_DONE;
+}
+
+
 int ICACHE_FLASH_ATTR cgiPins(HttpdConnData *connData) {
   if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
   if (connData->requestType == HTTPD_METHOD_GET) {
     return cgiPinsGet(connData);
   } else if (connData->requestType == HTTPD_METHOD_POST) {
     return cgiPinsSet(connData);
+  } else {
+    jsonHeader(connData, 404);
+    return HTTPD_CGI_DONE;
+  }
+}
+
+int ICACHE_FLASH_ATTR cgiGPIO(HttpdConnData *connData) {
+  if (connData->conn==NULL) return HTTPD_CGI_DONE; // Connection aborted. Clean up.
+  if (connData->requestType == HTTPD_METHOD_GET) {
+    return cgiGPIOGet(connData);
+  } else if (connData->requestType == HTTPD_METHOD_POST) {
+    return cgiGPIOSet(connData);
   } else {
     jsonHeader(connData, 404);
     return HTTPD_CGI_DONE;

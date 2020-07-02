@@ -159,7 +159,7 @@ function ajaxReq(method, url, ok_cb, err_cb, data) {
     console.log("XHR abort:", method, url);
     xhr.status = 599;
     xhr.responseText = "request time-out";
-  }, 9000);
+  }, 40000);
   xhr.onreadystatechange = function() {
     if (xhr.readyState != 4) { return; }
     clearTimeout(timeout);
@@ -387,7 +387,7 @@ function showNotification(text) {
   notifTimout = setTimeout(function() {
       el.setAttribute('hidden', '');
       notifTimout = null;
-    }, 4000);
+    }, 40000);
 }
 
 //===== GPIO Pin mux card

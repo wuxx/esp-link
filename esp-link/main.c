@@ -67,6 +67,9 @@ handled top-down, so make sure to put more specific rules above the more
 general ones. Authorization things (like authBasic) act as a 'barrier' and
 should be placed above the URLs they protect.
 */
+
+extern int ICACHE_FLASH_ATTR cgiGPIO(HttpdConnData *connData);
+
 HttpdBuiltInUrl builtInUrls[] = {
   { "/", cgiRedirect, "/home.html" },
   { "/menu", cgiMenu, NULL },
@@ -108,6 +111,7 @@ HttpdBuiltInUrl builtInUrls[] = {
   { "/services/info", cgiServicesInfo, NULL },
   { "/services/update", cgiServicesSet, NULL },
   { "/pins", cgiPins, NULL },
+  { "/gpio", cgiGPIO, NULL },
 #ifdef MQTT
   { "/mqtt", cgiMqtt, NULL },
 #endif
@@ -158,6 +162,29 @@ user_rf_cal_sector_set(void) {
   return sect;
 }
 
+#define GPIO_RELAY  (12)
+#define GPIO_LED    (13)
+
+void ICACHE_FLASH_ATTR relay_on()
+{
+    gpio_output_set((1<<GPIO_RELAY), 0, (1<<GPIO_RELAY), 0);    /* High */
+}
+
+void ICACHE_FLASH_ATTR relay_off()
+{
+    gpio_output_set(0, (1<<GPIO_RELAY), (1<<GPIO_RELAY), 0);    /* Low */
+}
+
+void ICACHE_FLASH_ATTR led_on()
+{
+    gpio_output_set(0, (1<<GPIO_LED), (1<<GPIO_LED), 0);        /* Low */
+}
+
+void ICACHE_FLASH_ATTR led_off()
+{
+    gpio_output_set((1<<GPIO_LED), 0, (1<<GPIO_LED), 0);        /* High */
+}
+
 // Main routine to initialize esp-link.
 void ICACHE_FLASH_ATTR
 user_init(void) {
@@ -181,6 +208,12 @@ user_init(void) {
   os_printf("Flash config restore %s\n", restoreOk ? "ok" : "*FAILED*");
   // Status LEDs
   statusInit();
+
+  makeGpio(GPIO_RELAY); /* relay & led1 */
+  makeGpio(GPIO_LED);   /* led2 */
+  relay_off();
+  led_on();
+
   serledInit();
   // Wifi
   wifiInit();

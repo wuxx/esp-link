@@ -338,7 +338,7 @@ static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
       os_timer_arm(&resetTimer, RESET_TIMEOUT, 0); // check one more time after switching to STA-only
 #endif
     }
-    log_uart(false);
+    //log_uart(false);
     // no more resetTimer at this point, gotta use physical reset to recover if in trouble
   } else {
     // we don't have an IP address
